@@ -1,66 +1,60 @@
 <?php
-require_once __DIR__ . '/vendor/autoload.php';
+declare(strict_types=1);
 
-use Symfony\Component\Console\{
-    Command\Command,
-    Input\InputInterface,
-    Output\OutputInterface,
-    Style\SymfonyStyle
+// exclude debug messages
+$filter = function(string $line): bool {
+    return !str_contains($line, '.DEBUG:');
 };
-use React\EventLoop\Loop;
-use React\Stream\ReadableResourceStream;
 
-class LogMonitorCommand extends Command
-{
-    protected function configure(): void
-    {
-        $this->setName('log:monitor');
-        $this->setDescription('Monitors log entries from the console.');
+//extract the log level
+$decorator = function(string $line): ?string {
+    if (preg_match('/test\.(\w+):/', $line, $matches)) {
+        return strtolower($matches[1]);
     }
+    return null;
+};
 
-    protected function execute(InputInterface $input, OutputInterface $output): int
-    {
-        $io = new SymfonyStyle($input, $output);
-        $loop = Loop::get();
-
-        $stats = [];
-
-        $updateStats = function () use (&$stats, $io, $output) {
-            // Clear the entire screen
-            $output->write("\033[2J");
-            // Move cursor to the top of the screen
-            $output->write("\033[H");
-            // Print the static header information
-            $io->title('Log Monitor');
-            
-            $io->writeln('Type log messages below:');
-            // Print dynamic stats under the static text
-            foreach ($stats as $level => $count) {
-                $io->section("$level: $count");
-            }
-            $io->write('> '); // Prompt
-        };
-
-        $loop->addPeriodicTimer(1, $updateStats);
-
-        $stdin = new ReadableResourceStream(STDIN, $loop);
-        $stdin->on('data', function ($chunk) use (&$stats, $io) {
-            $lines = explode("\n", trim($chunk));
-            foreach ($lines as $line) {
-                if (str_contains($line, '.DEBUG:')) continue;
-                if (preg_match('/test\.(\w+):/', $line, $matches)) {
-                    $level = strtolower($matches[1]);
-                    $stats[$level] = ($stats[$level] ?? 0) + 1;
-                }
-            }
-        });
-
-        $loop->run();
-
-        return Command::SUCCESS;
+// read data from input stream
+function readStream(): iterable {
+    $handle = fopen("php://stdin", "r");
+    if ($handle) {
+        while (($line = fgets($handle)) !== false) {
+            yield $line;
+        }
+        fclose($handle);
     }
 }
 
-$application = new \Symfony\Component\Console\Application();
-$application->add(new LogMonitorCommand());
-$application->run();
+// process log data and build statistics
+function processLogStream(callable $filter, callable $decorator): void {
+    $stats = [];
+    $updateInterval = 5; // update every 10 seconds
+    $nextUpdate = time() + $updateInterval;
+
+    foreach (readStream() as $line) {
+        if ($filter($line)) {
+            $level = $decorator($line);
+            if ($level !== null) {
+                $stats[$level] = ($stats[$level] ?? 0) + 1;
+            }
+        }
+
+        if (time() >= $nextUpdate) {
+            arsort($stats);
+            foreach ($stats as $level => $count) {
+                echo "$level: $count" . PHP_EOL;
+            }
+            $nextUpdate = time() + $updateInterval;
+        }
+    }
+}
+
+// Signal handling for clean exit
+pcntl_async_signals(true);
+pcntl_signal(SIGINT, function() {
+    echo "Exiting..." . PHP_EOL;
+    exit;
+});
+
+// CLI entry point
+processLogStream($GLOBALS['filter'], $GLOBALS['decorator']);
