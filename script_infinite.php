@@ -6,7 +6,7 @@ $filter = function(string $line): bool {
     return !str_contains($line, '.DEBUG:');
 };
 
-//extract the log level
+// extract the log level
 $decorator = function(string $line): ?string {
     if (preg_match('/test\.(\w+):/', $line, $matches)) {
         return strtolower($matches[1]);
@@ -28,7 +28,7 @@ function readStream(): iterable {
 // process log data and build statistics
 function processLogStream(callable $filter, callable $decorator): void {
     $stats = [];
-    $updateInterval = 5; // update every 10 seconds
+    $updateInterval = 10; // Update interval set to 10 seconds
     $nextUpdate = time() + $updateInterval;
 
     foreach (readStream() as $line) {
