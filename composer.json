@@ -1,5 +1,9 @@
 {
     "require-dev": {
         "monolog/monolog": "^1.23"
+    },
+    "require": {
+        "symfony/console": "^7.0",
+        "react/stream": "^1.3"
     }
 }
