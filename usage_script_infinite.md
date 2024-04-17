@@ -1,7 +1,5 @@
 # Program pro čtení logovacích zpráv
 
-Program, který jsem upravil, je navržen pro čtení logovacích zpráv ze standardního vstupu (stdin), což znamená, že je možné mu předat data například přímo z konzole nebo je do něj přesměrovat z jiného procesu nebo souboru. Zde jsou několik příkladů, jak můžete tento skript použít:
-
 ## Přímý vstup z konzole
 
 Spustíte skript a poté ručně vkládáte logovací řádky přímo do konzole. Skript bude zpracovávat vstup a periodicky vypisovat statistiky. Pro ukončení skriptu můžete použít Ctrl+C.
@@ -51,4 +49,3 @@ someCommand | php script_infinite.php
 
 Skript je navržen tak, aby pracoval s logy ve specifickém formátu, který očekává zprávy s prefixem jako test.INFO: nebo test.ERROR:.
 K ukončení skriptu, který čte ze stdin, použijte Ctrl+C v případě přímého vstupu, nebo prostě ukončete proces, který generuje data. **Každou operaci potvrďte stisknutím mezerníku!!! I pro ukončení**
-Pokud máte nějaké specifické požadavky na formát nebo zpracování dat, dejte mi vědět, a já mohu program dále upravit.
